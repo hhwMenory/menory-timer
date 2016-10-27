@@ -13,5 +13,6 @@
 			"Menory\\Test\\": "./test"
 		}
     },
+    "bin": ["bin/test.php"],
     "require": {}
 }
