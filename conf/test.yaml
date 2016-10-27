@@ -1,0 +1,8 @@
+# demo
+\Menory\Test\Test:     # 定时任务类名
+  enabled: true         # 是否启用定时器
+  time: '* 30 * * * *'  # '秒 分 时 日 月 周'
+
+\Menory\Test\Test2:
+  enabled: true 
+  time: '10 * * * * *'

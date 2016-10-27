@@ -1,0 +1,17 @@
+{
+    "name": "menory/timer",
+    "description": "my timer package",
+    "authors": [
+        {
+            "name": "hhw",
+            "email": "hhw_menory@yeah.net"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+			"Menory\\Timer\\": "./src",
+			"Menory\\Test\\": "./test"
+		}
+    },
+    "require": {}
+}
