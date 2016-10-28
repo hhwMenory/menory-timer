@@ -6,6 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Menory\\Unit\\' => array($vendorDir . '/menory/unit/src'),
     'Menory\\Timer\\' => array($baseDir . '/src'),
     'Menory\\Test\\' => array($baseDir . '/test'),
 );

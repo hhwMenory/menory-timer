@@ -5,6 +5,7 @@
  * @date 2016-10-23 12:38:50
  */
 namespace Menory\Timer;
+use Menory\Unit\Stdio;
 
 class TimerManager
 {
@@ -49,7 +50,7 @@ class TimerManager
         self::init();
 
         \swoole_process::signal(SIGUSR2, function($signal) {
-            Stdio::out("timer service start stop", Stdio::TYPE['success']);
+            Stdio::out("\ntimer service start stop", Stdio::TYPE['success']);
             // 通知子进程退出
             foreach (self::$timerProcessPidPools as $timerProcessPid => $timer) {
                 \swoole_process::kill($timerProcessPid);
@@ -102,12 +103,12 @@ class TimerManager
 
             $timerProcess = new \swoole_process(function ($process) use ($timer, $time) {
                 $times   = preg_split("/[\s]+/i", trim($time));
-                $second  = parseOneTime($times[0], 0, 59);
-                $minutes = parseOneTime($times[1], 0, 59);
-                $hours   = parseOneTime($times[2], 0, 23);
-                $day     = parseOneTime($times[3], 1, 31);
-                $month   = parseOneTime($times[4], 1, 12);
-                $week    = parseOneTime($times[5], 0, 6);
+                $second  = self::parseOneTime($times[0], 0, 59);
+                $minutes = self::parseOneTime($times[1], 0, 59);
+                $hours   = self::parseOneTime($times[2], 0, 23);
+                $day     = self::parseOneTime($times[3], 1, 31);
+                $month   = self::parseOneTime($times[4], 1, 12);
+                $week    = self::parseOneTime($times[5], 0, 6);
 
                 \swoole_timer_tick(1000, function ($timerId) use ($timer, $second, $minutes, $hours, $day, $month, $week) {
                     $currTime = time();
@@ -138,6 +139,25 @@ class TimerManager
 
     }
 
+    public static function parseOneTime($val, $min, $max)
+    {
+        $result = [];
+        $v1     = explode(",", $val);
+        foreach ($v1 as $v2) {
+            $v3   = explode("/", $v2);
+            $step = empty($v3[1]) ? 1 : $v3[1];
+            $v4   = explode("-", $v3[0]);
+
+            $rangeMin = count($v4) == 2 ? $v4[0] : ($v3[0] == "*" ? $min : $v3[0]);
+            $ranegMax = count($v4) == 2 ? $v4[1] : ($v3[0] == "*" ? $max : $v3[0]);
+
+            for ($i = $rangeMin; $i <= $ranegMax; $i += $step) {
+                $result[] = (int) $i;
+            }
+        }
+        return $result;
+    }
+
     public static function stop()
     {
     }
@@ -158,67 +178,4 @@ class TimerManager
         file_put_contents(self::$timerManagerPidPath, self::getPid());
     }
 
-}
-
-
-/*
-
-### format
-    \n\033[xx;xxm%s\033[0m
-
-    0：黑
-    1：深红
-    2：绿
-    3：黄色
-    4：蓝色
-    5：紫色
-    6：深绿
-    7：白色
-
-    30-37：前景色
-    40-37：背景色
-
-    \33[4m：下划线
-    \33[0m：关闭所有属性
-
- */
-
-class Stdio
-{
-    // enum
-    const TYPE = [
-        'success' => 33,
-        'warning' => 31,
-        'info'    => 36
-    ];
-
-    const FORMAT = "\033[%dm%s\033[0m\n";
-
-    public static function out($msg, $type) {
-        if (!in_array($type, self::TYPE)) {
-            fwrite(STDOUT, sprintf(self::FORMAT, self::TYPE['warning'], 'Stdio out type not\'t support'));
-        }
-
-        fwrite(STDOUT, sprintf(self::FORMAT, $type, $msg));
-    }
-}
-
-function parseOneTime($val, $min, $max)
-{
-    $result = [];
-    $v1     = explode(",", $val);
-    foreach ($v1 as $v2) {
-        $v3   = explode("/", $v2);
-        $step = empty($v3[1]) ? 1 : $v3[1];
-        $v4   = explode("-", $v3[0]);
-
-        $rangeMin = count($v4) == 2 ? $v4[0] : ($v3[0] == "*" ? $min : $v3[0]);
-        $ranegMax = count($v4) == 2 ? $v4[1] : ($v3[0] == "*" ? $max : $v3[0]);
-
-        for ($i = $rangeMin; $i <= $ranegMax; $i += $step) {
-            $result[] = (int) $i;
-        }
-    }
-    // ksort($result);
-    return $result;
 }

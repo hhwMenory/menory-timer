@@ -9,12 +9,17 @@ class ComposerStaticInite8c6b07eb918695123d7df16de449cc8
     public static $prefixLengthsPsr4 = array (
         'M' => 
         array (
+            'Menory\\Unit\\' => 12,
             'Menory\\Timer\\' => 13,
             'Menory\\Test\\' => 12,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
+        'Menory\\Unit\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/menory/unit/src',
+        ),
         'Menory\\Timer\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
@@ -28,8 +33,8 @@ class ComposerStaticInite8c6b07eb918695123d7df16de449cc8
     public static $classMap = array (
         'Menory\\Test\\Test' => __DIR__ . '/../..' . '/test/Test.php',
         'Menory\\Test\\Test2' => __DIR__ . '/../..' . '/test/Test2.php',
-        'Menory\\Timer\\Stdio' => __DIR__ . '/../..' . '/src/TimerManager.php',
         'Menory\\Timer\\TimerManager' => __DIR__ . '/../..' . '/src/TimerManager.php',
+        'Menory\\Unit\\Stdio' => __DIR__ . '/..' . '/menory/unit/src/Stdio.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

@@ -13,6 +13,8 @@
 			"Menory\\Test\\": "./test"
 		}
     },
-    "bin": ["bin/test.php"],
-    "require": {}
+    "bin": ["bin/menory-timer"],
+    "require": {
+        "menory/unit": "^1.0"
+    }
 }
