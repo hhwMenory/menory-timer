@@ -11,6 +11,8 @@ category: package
     options：
         --config-path=/var/timer.yaml # 定时任务配置文件
 
+    composer global require "menory/timer*"
+
 ### demo
     
 ``` bash

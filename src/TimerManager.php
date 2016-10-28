@@ -12,7 +12,11 @@ class TimerManager
 
     protected static $configFilePath = '/home/nginx/package/timer/conf/test.yaml';
 
+    protected static $timerManagerPidPath = '/tmp/timer-manager.pid';
+
     protected static $configs = [];
+
+    protected static $timerProcessPidPools = [];
 
     protected static function init()
     {
@@ -35,23 +39,42 @@ class TimerManager
         Stdio::out("  - swoole version：".SWOOLE_VERSION, Stdio::TYPE['success']);
         Stdio::out("  - timezone：".date_default_timezone_get(), Stdio::TYPE['success']);
         Stdio::out("  - current time：".date("Y-m-d H:i:s")."\n", Stdio::TYPE['success']);
+        Stdio::out("  - timer-service pid file：".self::$timerManagerPidPath, Stdio::TYPE['success']);
+        Stdio::out("  - timer-service config file：".self::$configFilePath."\n", Stdio::TYPE['success']);
     }
 
     public static function start()
     {
         \swoole_process::daemon(true, true);
         self::init();
-        // Stdio::out("\Menory\Crontab::start running...", Stdio::TYPE['info']);
-        // echo "\Menory\Crontab::daemon running...\n";
+
+        \swoole_process::signal(SIGUSR2, function($signal) {
+            Stdio::out("timer service start stop", Stdio::TYPE['success']);
+            // 通知子进程退出
+            foreach (self::$timerProcessPidPools as $timerProcessPid => $timer) {
+                \swoole_process::kill($timerProcessPid);
+            }
+            // 等待所有子进程退出
+            \swoole_timer_tick(100, function() {
+                if (count(self::$timerProcessPidPools) <= 0) {
+                    Stdio::out("timer service has stopped", Stdio::TYPE['success']);
+                    @unlink(self::$timerManagerPidPath);
+                    exit(0);
+                }
+                usleep(100);
+            });
+        });
 
         \swoole_process::signal(SIGCHLD, function($signal) {
             while($result =  \swoole_process::wait(false)) {
-                echo "\Menory\Crontab::signal running...\n";
+                $timer = self::$timerProcessPidPools[$result['pid']];
                 Stdio::out(
-                    sprintf('PID: %d code: %d signal: %d' ,$result['pid'], $result['code'], $result['signal']),
+                    "timer process [{$timer}] has stopped",
                     Stdio::TYPE['warning']
                 );
-                // exit();
+
+                // 移出进程池
+                unset(self::$timerProcessPidPools[$result['pid']]);
             }
         });
 
@@ -101,12 +124,17 @@ class TimerManager
                 });
 
             });
-            $timerProcess->start();
+            $timerProcessPid = $timerProcess->start();
+            if ($timerProcessPid !== false) {
+                self::$timerProcessPidPools[$timerProcessPid] = $timer;
+            } else {
+                Stdio::out("timer process [{$timer}] startup fail".count(self::$timerProcessPidPools), Stdio::TYPE['warning']);
+            }
         }
 
         self::writePidFile();
-        Stdio::out("### timed service startup succes，process pid is ".self::getPid()."\n", Stdio::TYPE['success']);
-        Stdio::out("  - timer num：10", Stdio::TYPE['success']);
+        Stdio::out("### timed service startup succes，timer manager process pid is ".self::getPid()."\n", Stdio::TYPE['success']);
+        Stdio::out("  - timer process num：".count(self::$timerProcessPidPools), Stdio::TYPE['success']);
 
     }
 
@@ -127,8 +155,7 @@ class TimerManager
 
     public static function writePidFile()
     {
-        file_put_contents('/tmp/crontab.pid', self::getPid());
-        // ps aux | grep php | grep -v grep | awk '{printf("%d", $2)}' | xargs kill -15
+        file_put_contents(self::$timerManagerPidPath, self::getPid());
     }
 
 }
