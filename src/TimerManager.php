@@ -21,7 +21,9 @@ class TimerManager
 
     protected static function init()
     {
-        date_default_timezone_set('PRC');
+        if (empty(ini_get('date.timezone'))) {
+            ini_set('date.timezone', 'PRC');
+        }
 
         if (!get_extension_funcs('yaml')) {
             Stdio::out('timer package need yaml extension！', Stdio::TYPE['warning']);
@@ -46,6 +48,7 @@ class TimerManager
 
     public static function start()
     {
+        swoole_set_process_name('timer-service manager process');
         \swoole_process::daemon(true, true);
         self::init();
 
@@ -56,18 +59,18 @@ class TimerManager
                 \swoole_process::kill($timerProcessPid);
             }
             // 等待所有子进程退出
-            \swoole_timer_tick(100, function() {
+            \swoole_timer_tick(100, function($timerId) {
                 if (count(self::$timerProcessPidPools) <= 0) {
                     Stdio::out("timer service has stopped", Stdio::TYPE['success']);
                     @unlink(self::$timerManagerPidPath);
+                    // \swoole_timer_clear($timerId);
                     exit(0);
                 }
-                usleep(100);
             });
         });
 
         \swoole_process::signal(SIGCHLD, function($signal) {
-            while($result =  \swoole_process::wait(false)) {
+            while ($result =  \swoole_process::wait(false)) {
                 $timer = self::$timerProcessPidPools[$result['pid']];
                 Stdio::out(
                     "timer process [{$timer}] has stopped",
@@ -102,6 +105,7 @@ class TimerManager
             }
 
             $timerProcess = new \swoole_process(function ($process) use ($timer, $time) {
+                $process->name("timer-service woker process [{$timer}]");
                 $times   = preg_split("/[\s]+/i", trim($time));
                 $second  = self::parseOneTime($times[0], 0, 59);
                 $minutes = self::parseOneTime($times[1], 0, 59);
@@ -110,7 +114,7 @@ class TimerManager
                 $month   = self::parseOneTime($times[4], 1, 12);
                 $week    = self::parseOneTime($times[5], 0, 6);
 
-                \swoole_timer_tick(1000, function ($timerId) use ($timer, $second, $minutes, $hours, $day, $month, $week) {
+                \swoole_timer_tick(1000, function ($timerId) use ($timer, $process, $second, $minutes, $hours, $day, $month, $week) {
                     $currTime = time();
                     if (
                         in_array((int) date('s', $currTime), $second)  &&
@@ -120,7 +124,12 @@ class TimerManager
                         in_array((int) date('w', $currTime), $week)    &&
                         in_array((int) date('n', $currTime), $month)
                     ) {
-                        $timer::run();
+                        if (method_exists($timer, 'run')) {
+                            $timer::run();
+                        } else {
+                            Stdio::out("\n[warning] {$timer} run method not exists", Stdio::TYPE['warning']);
+                            $process->exit(0);
+                        }
                     }
                 });
 
