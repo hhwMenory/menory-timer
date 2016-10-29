@@ -53,7 +53,7 @@ class TimerManager
         self::init();
 
         \swoole_process::signal(SIGUSR2, function($signal) {
-            Stdio::out("\ntimer service start stop", Stdio::TYPE['success']);
+            Stdio::out("timer service start stop", Stdio::TYPE['success']);
             // 通知子进程退出
             foreach (self::$timerProcessPidPools as $timerProcessPid => $timer) {
                 \swoole_process::kill($timerProcessPid);
@@ -169,6 +169,12 @@ class TimerManager
 
     public static function stop()
     {
+        if (is_file(self::$timerManagerPidPath)) {
+            $timerManagerPid = file_get_contents(self::$timerManagerPidPath);
+            \swoole_process::kill($timerManagerPid, SIGUSR2);
+        } else {
+            Stdio::out("timer service has stopped", Stdio::TYPE['success']);
+        }
     }
 
     public static function daemon()

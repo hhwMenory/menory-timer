@@ -2,21 +2,26 @@
 <?php
 require (__DIR__.'/../vendor/autoload.php');
 
+use \Menory\Unit\Stdio;
+
 $options     = 's:';
 $longOptions = ['config-path:'];
 
 $opts = getopt($options, $longOptions);
 
 function help() {
-    exit('Usage：bin/crontab.php -s [start | stop] [options]'."\n");
+    Stdio::out('Usage：bin/crontab.php -s [start | stop] [options]', Stdio::TYPE['success']);
 }
 
 if (!isset($opts['s']) || !$opts['s'])
-    help();
+    return help();
 
 switch ($opts['s']) {
     case 'start':
         \Menory\Timer\TimerManager::start();
+        break;
+    case 'stop':
+        \Menory\Timer\TimerManager::stop();
         break;
     default:
         help();
