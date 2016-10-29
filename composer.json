@@ -14,5 +14,7 @@
 		}
     },
     "bin": ["bin/menory-timer-service"],
-    "require": {}
+    "require": {
+        "menory/unit": "^1.0"
+    }
 }
