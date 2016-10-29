@@ -49,28 +49,28 @@ class TimerManager
     public static function start()
     {
         swoole_set_process_name('timer-service manager process');
-        \swoole_process::daemon(true, true);
+        \Swoole\Process::daemon(true, true);
         self::init();
 
-        \swoole_process::signal(SIGUSR2, function($signal) {
+        \Swoole\Process::signal(SIGUSR2, function($signal) {
             Stdio::out("timer service start stop", Stdio::TYPE['success']);
             // 通知子进程退出
             foreach (self::$timerProcessPidPools as $timerProcessPid => $timer) {
-                \swoole_process::kill($timerProcessPid);
+                \Swoole\Process::kill($timerProcessPid);
             }
             // 等待所有子进程退出
-            \swoole_timer_tick(100, function($timerId) {
+            \Swoole\Timer::tick(100, function($timerId) {
                 if (count(self::$timerProcessPidPools) <= 0) {
                     Stdio::out("timer service has stopped", Stdio::TYPE['success']);
                     @unlink(self::$timerManagerPidPath);
-                    // \swoole_timer_clear($timerId);
+                    // \Swoole\Timer::clear($timerId);
                     exit(0);
                 }
             });
         });
 
-        \swoole_process::signal(SIGCHLD, function($signal) {
-            while ($result =  \swoole_process::wait(false)) {
+        \Swoole\Process::signal(SIGCHLD, function($signal) {
+            while ($result =  \Swoole\Process::wait(false)) {
                 $timer = self::$timerProcessPidPools[$result['pid']];
                 Stdio::out(
                     "timer process [{$timer}] has stopped",
@@ -104,7 +104,7 @@ class TimerManager
                 // exit(0);
             }
 
-            $timerProcess = new \swoole_process(function ($process) use ($timer, $time) {
+            $timerProcess = new \Swoole\Process(function ($process) use ($timer, $time) {
                 $process->name("timer-service woker process [{$timer}]");
                 $times   = preg_split("/[\s]+/i", trim($time));
                 $second  = self::parseOneTime($times[0], 0, 59);
@@ -114,7 +114,7 @@ class TimerManager
                 $month   = self::parseOneTime($times[4], 1, 12);
                 $week    = self::parseOneTime($times[5], 0, 6);
 
-                \swoole_timer_tick(1000, function ($timerId) use ($timer, $process, $second, $minutes, $hours, $day, $month, $week) {
+                \Swoole\Timer::tick(1000, function ($timerId) use ($timer, $process, $second, $minutes, $hours, $day, $month, $week) {
                     $currTime = time();
                     if (
                         in_array((int) date('s', $currTime), $second)  &&
@@ -171,7 +171,7 @@ class TimerManager
     {
         if (is_file(self::$timerManagerPidPath)) {
             $timerManagerPid = file_get_contents(self::$timerManagerPidPath);
-            \swoole_process::kill($timerManagerPid, SIGUSR2);
+            \Swoole\Process::kill($timerManagerPid, SIGUSR2);
         } else {
             Stdio::out("timer service has stopped", Stdio::TYPE['success']);
         }
@@ -179,7 +179,7 @@ class TimerManager
 
     public static function daemon()
     {
-        \swoole_process::daemon(true, true);
+        \Swoole\Process::daemon(true, true);
     }
 
     public static function getPid()

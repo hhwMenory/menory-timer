@@ -10,7 +10,7 @@ $longOptions = ['config-path:'];
 $opts = getopt($options, $longOptions);
 
 function help() {
-    Stdio::out('Usage：bin/crontab.php -s [start | stop] [options]', Stdio::TYPE['success']);
+    Stdio::out('Usage：menory-timer-service -s [start | stop] [options]', Stdio::TYPE['success']);
 }
 
 if (!isset($opts['s']) || !$opts['s'])
